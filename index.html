@@ -1,1 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KASANE INTERLINK PROJECT</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0f;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Share Tech Mono',monospace;color:#c8ffc8;overflow:hidden}
+  #wrap{width:100%;max-width:560px;padding:24px}
+  .title{font-size:11px;letter-spacing:4px;color:#4af;text-transform:uppercase;margin-bottom:4px}
+  .subtitle{font-size:18px;font-weight:500;color:#fff;margin-bottom:24px;letter-spacing:1px}
+  .terminal{background:#050508;border:0.5px solid #1a3a1a;border-radius:8px;padding:20px 24px;margin-bottom:16px}
+  .line{font-size:13px;line-height:1.8;color:#a0e0a0}
+  .line.dim{color:#4a7a4a}
+  .line.highlight{color:#4af;font-weight:500}
+  .countdown-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+  .unit{background:#050508;border:0.5px solid #1a3a1a;border-radius:8px;padding:16px 8px;text-align:center}
+  .unit-num{font-size:36px;font-weight:500;color:#fff;letter-spacing:2px;line-height:1;display:block}
+  .unit-label{font-size:10px;color:#4a7a4a;letter-spacing:3px;margin-top:6px;display:block;text-transform:uppercase}
+  .bar-wrap{margin:16px 0 8px}
+  .bar-track{height:2px;background:#1a3a1a;border-radius:2px;overflow:hidden}
+  .bar-fill{height:100%;background:#4af;border-radius:2px;transition:width .5s linear}
+  .bar-label{display:flex;justify-content:space-between;font-size:10px;color:#4a7a4a;margin-top:4px;letter-spacing:1px}
+  .blink{animation:blink 1s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  .scan{animation:scan 4s linear infinite}
+  @keyframes scan{0%{text-shadow:0 0 0 transparent}50%{text-shadow:0 0 8px #4af44}100%{text-shadow:0 0 0 transparent}}
+  .arrived .unit-num{color:#4af;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .pip-row{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .pip{width:6px;height:6px;border-radius:50%;background:#1a3a1a;border:0.5px solid #2a5a2a;transition:background .3s}
+  .pip.lit{background:#4af;border-color:#4af}
+  .noise{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.015}
+  #app{position:relative;z-index:1}
+  .lang-toggle{display:flex;gap:8px;margin-bottom:20px}
+  .lang-btn{font-size:11px;padding:4px 12px;border-radius:8px;border:0.5px solid #2a4a2a;color:#4a7a4a;background:transparent;font-family:'Share Tech Mono',monospace;cursor:pointer;transition:all .15s;letter-spacing:1px}
+  .lang-btn.active{border-color:#4af;color:#4af;background:#0a0f1a}
+  .lang-btn:hover{border-color:#4af;color:#4af}
+  .done-msg{font-size:22px;color:#fff;text-align:center;margin:12px 0;letter-spacing:2px;animation:glow 1.5s infinite}
+  @keyframes glow{0%,100%{text-shadow:0 0 8px #4af}50%{text-shadow:0 0 24px #4af,0 0 4px #fff}}
+</style>
+</head>
+<body>
+<canvas class="noise" id="noise"></canvas>
+<div id="app">
+  <div id="wrap">
+    <div class="title">/// signal pending ///</div>
+    <div class="subtitle">KASANE INTERLINK PROJECT</div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('ja')">日本語</button>
+    </div>
+    <div class="terminal">
+      <div class="line dim" id="l-status">// awaiting transmission...</div>
+      <div class="line highlight scan" id="l-target" style="margin-top:4px"></div>
+      <div class="countdown-grid" id="countdown-grid">
+        <div class="unit"><span class="unit-num" id="cd-days">--</span><span class="unit-label" id="lbl-days">days</span></div>
+        <div class="unit"><span class="unit-num" id="cd-hours">--</span><span class="unit-label" id="lbl-hours">hours</span></div>
+        <div class="unit"><span class="unit-num" id="cd-mins">--</span><span class="unit-label" id="lbl-mins">mins</span></div>
+        <div class="unit"><span class="unit-num" id="cd-secs">--</span><span class="unit-label" id="lbl-secs">secs</span></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-track"><div class="bar-fill" id="bar-fill" style="width:0%"></div></div>
+        <div class="bar-label"><span id="bar-start"></span><span id="bar-end"></span></div>
+      </div>
+      <div class="pip-row" id="pip-row"></div>
+    </div>
+    <div class="line dim blink" id="l-footer"></div>
+  </div>
+</div>
 
+<script>
+const LANG = {
+  en: {
+    status: "// awaiting transmission...",
+    target: "TARGET → 2025.03.31 00:00 JST",
+    footer: ">>> stand by <<<",
+    arrived: ">>> transmission received <<<",
+    arrivedMsg: "KASANE INTERLINK PROJECT IS LIVE",
+    days: "days", hours: "hours", mins: "mins", secs: "secs",
+    barStart: "now", barEnd: "03.31",
+  },
+  ja: {
+    status: "// 送信待機中...",
+    target: "ターゲット → 2025.03.31 00:00 JST",
+    footer: ">>> 待機せよ <<<",
+    arrived: ">>> 信号受信完了 <<<",
+    arrivedMsg: "KASANE INTERLINK PROJECT 始動",
+    days: "日", hours: "時間", mins: "分", secs: "秒",
+    barStart: "現在", barEnd: "03.31",
+  }
+};
+
+let currentLang = 'en';
+function setLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+  updateLabels();
+}
+
+function updateLabels(){
+  const L = LANG[currentLang];
+  document.getElementById('l-status').textContent = L.status;
+  document.getElementById('l-target').textContent = L.target;
+  document.getElementById('lbl-days').textContent = L.days;
+  document.getElementById('lbl-hours').textContent = L.hours;
+  document.getElementById('lbl-mins').textContent = L.mins;
+  document.getElementById('lbl-secs').textContent = L.secs;
+  document.getElementById('bar-start').textContent = L.barStart;
+  document.getElementById('bar-end').textContent = L.barEnd;
+  document.getElementById('l-footer').textContent = L.footer;
+}
+
+// Target: March 31 2025 00:00:00 JST (UTC+9)
+const TARGET = new Date('2026-03-31T00:00:00+09:00').getTime();
+
+// Page load time as start for progress bar
+const PAGE_START = Date.now();
+const TOTAL_DURATION = TARGET - PAGE_START;
+
+// 31 pips for 31 days of March
+const pipRow = document.getElementById('pip-row');
+for(let i=0;i<31;i++){
+  const p=document.createElement('div');
+  p.className='pip';
+  p.id='pip-'+i;
+  pipRow.appendChild(p);
+}
+
+let lastSecs = -1;
+
+function pad(n){return String(Math.floor(n)).padStart(2,'0');}
+
+function tick(){
+  const now = Date.now();
+  const diff = TARGET - now;
+
+  if(diff <= 0){
+    // Arrived
+    document.getElementById('cd-days').textContent='00';
+    document.getElementById('cd-hours').textContent='00';
+    document.getElementById('cd-mins').textContent='00';
+    document.getElementById('cd-secs').textContent='00';
+    document.getElementById('bar-fill').style.width='100%';
+    const L=LANG[currentLang];
+    document.getElementById('l-footer').textContent=L.arrived;
+    document.getElementById('l-footer').classList.remove('blink');
+    document.getElementById('l-status').textContent=L.arrivedMsg;
+    document.getElementById('l-status').classList.add('done-msg');
+    document.getElementById('l-target').textContent='';
+    for(let i=0;i<31;i++) document.getElementById('pip-'+i).classList.add('lit');
+    return;
+  }
+
+  const totalSecs = Math.floor(diff/1000);
+  const days  = Math.floor(diff/(1000*60*60*24));
+  const hours = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+  const mins  = Math.floor((diff%(1000*60*60))/(1000*60));
+  const secs  = Math.floor((diff%(1000*60))/1000);
+
+  lastSecs = secs;
+
+  document.getElementById('cd-days').textContent=pad(days);
+  document.getElementById('cd-hours').textContent=pad(hours);
+  document.getElementById('cd-mins').textContent=pad(mins);
+  document.getElementById('cd-secs').textContent=pad(secs);
+
+  // Progress bar based on time elapsed from page load to target
+  const elapsed = now - PAGE_START;
+  const pct = TOTAL_DURATION > 0 ? Math.min((elapsed/TOTAL_DURATION)*100, 100) : 100;
+  document.getElementById('bar-fill').style.width=pct+'%';
+
+  // Pips: light up based on days elapsed in March
+  // March has 31 days. Show how many days have passed since March 1 JST
+  const marchStart = new Date('2026-03-01T00:00:00+09:00').getTime();
+  const daysPassed = Math.floor((now - marchStart)/(1000*60*60*24));
+  for(let i=0;i<31;i++){
+    const p=document.getElementById('pip-'+i);
+    if(i < daysPassed) p.classList.add('lit');
+    else p.classList.remove('lit');
+  }
+
+  setTimeout(tick, 1000);
+}
+
+// Noise canvas
+const canvas=document.getElementById('noise');
+const ctx=canvas.getContext('2d');
+function drawNoise(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  const img=ctx.createImageData(canvas.width,canvas.height);
+  for(let i=0;i<img.data.length;i+=4){
+    const v=Math.random()*255;
+    img.data[i]=v;img.data[i+1]=v;img.data[i+2]=v;img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  setTimeout(drawNoise,80);
+}
+drawNoise();
+
+updateLabels();
+tick();
+</script>
+</body>
+</html>
