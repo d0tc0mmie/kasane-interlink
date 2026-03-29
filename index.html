@@ -74,21 +74,23 @@
 const LANG = {
   en: {
     status: "// awaiting transmission...",
-    target: "TARGET → 2026.03.30 18:00 JST",
+    target: "TARGET → 2026.03.30 20:00 JST",
     footer: ">>> stand by <<<",
     arrived: ">>> transmission received <<<",
     arrivedMsg: "KASANE INTERLINK 20/20 COMPLETE",
     arrivedLink: "follow the signal →",
+    arrivedSub: "standby the reveal, follow here",
     days: "days", hours: "hours", mins: "mins", secs: "secs",
     barStart: "now", barEnd: "03.30",
   },
   ja: {
     status: "// 送信待機中...",
-    target: "ターゲット → 2026.03.30 18:00 JST",
+    target: "ターゲット → 2026.03.30 20:00 JST",
     footer: ">>> 待機せよ <<<",
     arrived: ">>> 信号受信完了 <<<",
     arrivedMsg: "KASANE INTERLINK 20/20 COMPLETE",
     arrivedLink: "信号を追え →",
+    arrivedSub: "公開まで待機せよ、ここでフォロー",
     days: "日", hours: "時間", mins: "分", secs: "秒",
     barStart: "現在", barEnd: "03.30",
   }
@@ -116,7 +118,7 @@ function updateLabels(){
 }
 
 // Target: March 31 2025 00:00:00 JST (UTC+9)
-const TARGET = new Date('2026-03-30T18:00:00+09:00').getTime();
+const TARGET = new Date('2026-03-30T20:00:00+09:00').getTime();
 
 // Page load time as start for progress bar
 const PAGE_START = Date.now();
@@ -132,6 +134,7 @@ for(let i=0;i<31;i++){
 }
 
 let lastSecs = -1;
+let arrived = false;
 
 function pad(n){return String(Math.floor(n)).padStart(2,'0');}
 
@@ -145,13 +148,14 @@ document.addEventListener('keydown',function(e){
 });
 
 function showArrived(){
+  arrived=true;
   const L=LANG[currentLang];
   document.getElementById('cd-days').textContent='00';
   document.getElementById('cd-hours').textContent='00';
   document.getElementById('cd-mins').textContent='00';
   document.getElementById('cd-secs').textContent='00';
   document.getElementById('bar-fill').style.width='100%';
-  document.getElementById('l-footer').innerHTML=`<a href="https://x.com/KasaneInterlink" target="_blank" style="color:#4af;text-decoration:none;letter-spacing:2px;">${L.arrivedLink}</a>`;
+  document.getElementById('l-footer').innerHTML=`<a href="https://x.com/KasaneInterlink" target="_blank" style="color:#4af;text-decoration:none;letter-spacing:2px;">${L.arrivedLink}</a><br><span style="font-size:11px;color:#4a7a4a;letter-spacing:1px;margin-top:6px;display:inline-block;">${L.arrivedSub}</span>`;
   document.getElementById('l-footer').classList.remove('blink');
   document.getElementById('l-status').textContent=L.arrivedMsg;
   document.getElementById('l-status').classList.add('done-msg');
@@ -160,6 +164,7 @@ function showArrived(){
 }
 
 function tick(){
+  if(arrived) return;
   const now = Date.now();
   const diff = TARGET - now;
 
